@@ -35,6 +35,21 @@ def redcap_API_export(url,token):
 
     r = requests.post(url, data=fields)
     
-    df = pd.read_csv(io.StringIO(r.content.decode("utf-8")))
+    df = pd.read_csv(io.StringIO(r.content.decode("utf-8")), index_col=0)
 
     return df
+
+def project_dtype_summary(redcap_api_url, redcap_tokens_prod):
+    """
+    import all projects as a dict of dataframes from a redcap token dictionary
+    
+    args:
+        redcap_api_url: url to redcap environment
+        redcap_tokens_prod: dictionary with tokens {"PID#":token}
+    return:
+        dictionary {"PID#": dataframe}
+    """
+    
+    data_dict = {key: redcap_API_export(redcap_api_url, value) for key, value in redcap_tokens_prod.items()}
+    
+    return data_dict
