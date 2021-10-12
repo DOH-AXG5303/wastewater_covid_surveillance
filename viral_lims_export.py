@@ -54,6 +54,7 @@ numeric_clms_easy = [
                  'pre_ext_storage_time',
                  'collection_storage_time']
 
+#Columns that need to be numeric: challenging, redcap values restrictions
 numeric_clms_challenging = [
                              'sars_cov2_avg_conc',
                              'sars_cov2_std_error',
@@ -126,6 +127,6 @@ def transform_lims_dataframe(df_lims):
     
     #converting columns dtypes (select columns)
     df_lims[numeric_clms_easy] = df_lims[numeric_clms_easy].apply(pd.to_numeric)
-    df_lims[numeric_clms_challenging] = df_lims[numeric_clms_challenging].apply(pd.to_numeric, errors = "coerce")
+    df_lims[numeric_clms_challenging] = df_lims[numeric_clms_challenging].apply(pd.to_numeric, errors = "ignore") #neet to change to "coerce"
     
     return df_lims
