@@ -95,6 +95,25 @@ def redcap_API_export(url,token):
 
     return df
 
+def redcap_metadata_export(url,token):
+    """
+    all metadata API request
+    """
+    
+    #payload info to import metadata
+    fields = {
+        'token': token,
+        'content': 'metadata',
+        'format': 'csv',
+        'returnFormat': "csv"}
+
+    #request metadata and convert to dataframe
+    r = requests.post(url, data=fields)
+    df = pd.read_csv(io.StringIO(r.content.decode("utf-8")), index_col=0)
+
+    return df
+
+
 def project_dtype_summary(redcap_api_url, redcap_tokens_prod):
     """
     import all projects as a dict of dataframes from a redcap token dictionary
@@ -110,14 +129,14 @@ def project_dtype_summary(redcap_api_url, redcap_tokens_prod):
     
     return data_dict
 
-def transform_lims_dataframe(df_lims):
+
+def rename_lims_columns(df_lims):
     """
-    Transform lims dataframe in prep for redcap import.
-    Transform column names, set index, rename columns, convert select columns to numeric with select conditions. 
+    Transform column names, set index, rename columns
     args:
         df_lims = raw dataframe from LIMS
     return:
-        df_lims = transformed dataframe
+        df_lims = datframe with new column names
     """
     df_lims = df_lims.copy()
     df_lims.set_index("SubmitterSampleNumber", inplace = True) #set index
@@ -125,8 +144,50 @@ def transform_lims_dataframe(df_lims):
     df_lims = df_lims[list(dict_lims_column_map.keys())].copy() #keep only columns that will go to redcap
     df_lims.rename(columns = dict_lims_column_map, inplace = True) #rename the columns on the way to redcap
     
+    return df_lims
+
+def convert_lims_dtypes(df_lims):
+    
+    #Do I have to convert dtype to enter into redcap?
+    
     #converting columns dtypes (select columns)
+    df_lims = df_lims.copy()
     df_lims[numeric_clms_easy] = df_lims[numeric_clms_easy].apply(pd.to_numeric)
     df_lims[numeric_clms_challenging] = df_lims[numeric_clms_challenging].apply(pd.to_numeric, errors = "ignore") #neet to change to "coerce"
     
     return df_lims
+
+
+def accepted_redcap_fields(df):
+    """
+    create dictionary of accepted values in restricted fields
+    
+    args:
+        df - metadata dataframe
+    return:
+        dictionary {"Field ID": {"accepted input":"redcap displayed longform value"}}
+    """
+    
+    # dataframe Column "select_choices_or_calculations" contains metadata about accepted values
+    # dataframe rows are Redcap field names (redcap columns)
+    # Need to filter only the redcap columns (dataframe rows) that have value constraints
+
+    desired_column = df["select_choices_or_calculations"] #data of interest
+    empty = df["select_choices_or_calculations"].isnull() #mask for empty values
+    non_blank = desired_column[~empty] # selecting all that are not empty
+    mask = non_blank.str.contains(r"\|") # mask, must contain " | "
+    fields_with_choices = non_blank[mask].copy()  #real field choices are separated by "|", remove rows where "|" is not present in string
+
+
+    #Extracting possible choices for values from dataframe and converting into a dictionary
+    fields_dict = {}
+    for i in fields_with_choices.iteritems():
+        string_to_process = i[1]
+
+        list_to_process = string_to_process.split(" | ") #list of strings with key, value pairs separated by ", " within each list
+        keys_values_list = [i.split(", ", 1) for i in list_to_process]
+        values_dict = {t[0]:t[1] for t in keys_values_list}
+
+        fields_dict[i[0]] =  values_dict
+        
+    return fields_dict
