@@ -2,10 +2,12 @@ import pyodbc
 import pandas as pd
 import requests
 import io
+import re
 from lims_login import credentials
 from lims_login import redcap_tokens_prod
 from lims_login import redcap_api_url
 
+# {"LIMS Value": "REDCap Value"}
 dict_lims_column_map = {
                          'SampleCollectDate': 'sample_collect_date',
                          'SampleCollectTime': 'sample_collect_time',
@@ -146,6 +148,33 @@ def rename_lims_columns(df_lims):
     
     return df_lims
 
+def verify_time_field(df_lims):
+    """
+    Change time field "sample_collect_time" in prep for import to REDCap
+    
+    args:
+        Dataframe, must contain "sample_collect_time" as field
+    return:
+        Dataframe
+    """
+    df_lims = df_lims.copy()
+    collect_time = df_lims["sample_collect_time"].reset_index()
+
+    for i in collect_time.index:
+
+        a_1 = collect_time.loc[i,"sample_collect_time"]
+        if a_1 is None:
+            pass
+        elif re.search(r"^[0-9][0-9]\:[0-9][0-9]$", a_1):
+            pass
+        else:
+            collect_time.loc[i,"sample_collect_time"] = None
+            
+    to_return = collect_time.set_index("sample_id", drop = True).copy()
+    df_lims["sample_collect_time"] = to_return["sample_collect_time"]
+    
+    return df_lims
+
 def convert_lims_dtypes(df_lims):
     
     #Do I have to convert dtype to enter into redcap?
@@ -191,3 +220,27 @@ def accepted_redcap_fields(df):
         fields_dict[i[0]] =  values_dict
         
     return fields_dict
+
+
+def date_time_redcap_fields(df):
+    """
+    create dictionary of date and time fields in a redcap project
+    
+    args:
+       redcap_api_url - url to redcap API
+       redcap_tokens_prod - token for REDCap project
+    return:
+        Dataframe - field names and corresponding date/time values
+    
+    """
+    #df = redcap_metadata_export(redcap_api_url, redcap_tokens_prod)
+    df = df.copy()
+
+    df_text_type = df[["text_validation_type_or_show_slider_number"]].copy()
+
+    date_mask = df_text_type["text_validation_type_or_show_slider_number"].str.contains("date")
+    time_mask = df_text_type["text_validation_type_or_show_slider_number"].str.contains("time")
+
+    df_date_time = df_text_type[date_mask | time_mask].copy()
+
+    return df_date_time
