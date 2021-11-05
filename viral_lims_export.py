@@ -42,19 +42,32 @@ dict_lims_column_map = {
                          'TotConcVol': 'tot_conc_vol',
                          'QualityFlag': 'quality_flag'}
 
-#Columns that need to be numeric: currently functional
-numeric_clms_easy = [
-                 'tot_conc_vol',
-                 'equiv_sewage_amt',
-                 'collection_storage_temp',
-                 'flow_rate',
-                 'collection_water_temp',
-                 'rec_eff_percent',
-                 'ph',
-                 'pre_conc_storage_time',
-                 'tss',
-                 'pre_ext_storage_time',
-                 'collection_storage_time']
+#Columns that are numeric in LIMS, also numeric in REDCap
+numeric_clms= [
+             'ph',
+             'conductivity',
+             'collection_water_temp',
+             'tss',
+             'collection_storage_temp',
+             'equiv_sewage_amt',
+             'flow_rate',
+             'sars_cov2_std_error',
+             'sars_cov2_cl_95_lo',
+             'sars_cov2_cl_95_up',
+             'pre_ext_storage_temp',
+             'sars_cov2_avg_conc'
+            ]
+
+#Columns that are text in LIMS, converted to numeric in REDCap 
+text_to_numeric =  [
+                     'pretreatment_specify',
+                     'pre_conc_storage_time',
+                     'pre_ext_storage_time',
+                     'rec_eff_percent',
+                     'collection_storage_time',
+                     'tot_conc_vol'
+                    ]
+
 
 #Columns that need to be numeric: challenging, redcap values restrictions
 numeric_clms_challenging = [
@@ -175,16 +188,44 @@ def verify_time_field(df_lims):
     
     return df_lims
 
-def convert_lims_dtypes(df_lims):
+def convert_numeric(df):
+    """
+    convert numeric columns to numeric, coerce errors to NA
+    """
+    df = df.copy()
+    df[numeric_clms] = df[numeric_clms].apply(pd.to_numeric, errors = "coerce")
     
-    #Do I have to convert dtype to enter into redcap?
+    return df
+
+
+def freetext_transform(df_lims):
+    """
+    A set of columns is in format of open text - commonly filled with digits followed by numbers. 
+    Regex split values to numeric and text, replace value to the numeric portion. 
+    Convert entire column to numeric, coerce errors. 
+    """
     
-    #converting columns dtypes (select columns)
     df_lims = df_lims.copy()
-    df_lims[numeric_clms_easy] = df_lims[numeric_clms_easy].apply(pd.to_numeric)
-    df_lims[numeric_clms_challenging] = df_lims[numeric_clms_challenging].apply(pd.to_numeric, errors = "ignore") #neet to change to "coerce"
-    
+
+    for i in text_to_numeric:
+        series = df_lims[i].str.extract(r"([0-9\.]+)([A-Za-z ]+)?")[0]
+        df_lims[i] = series
+
+    df_lims[text_to_numeric] = df_lims[text_to_numeric].apply(pd.to_numeric, errors = "coerce")
+
     return df_lims
+
+
+# def convert_lims_dtypes(df_lims):
+    
+#     #Do I have to convert dtype to enter into redcap?
+    
+#     #converting columns dtypes (select columns)
+#     df_lims = df_lims.copy()
+#     df_lims[numeric_clms_easy] = df_lims[numeric_clms_easy].apply(pd.to_numeric)
+#     df_lims[numeric_clms_challenging] = df_lims[numeric_clms_challenging].apply(pd.to_numeric, errors = "ignore") #neet to change to "coerce"
+    
+#     return df_lims
 
 
 def accepted_redcap_fields(df):
