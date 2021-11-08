@@ -68,14 +68,16 @@ text_to_numeric =  [
                      'tot_conc_vol'
                     ]
 
-
-#Columns that need to be numeric: challenging, redcap values restrictions
-numeric_clms_challenging = [
-                             'sars_cov2_avg_conc',
-                             'sars_cov2_std_error',
-                             'sars_cov2_cl_95_lo',
-                             'sars_cov2_cl_95_up',
-                             'lod_sewage']
+#LIMS columns that have drop down choice
+choice_clms = [
+                 'sars_cov2_units',
+                 'quality_flag',
+                 'inhibition_adjust',
+                 'ntc_amplify',
+                 'pretreatment',
+                 'inhibition_detect',
+                 'sars_cov2_below_lod'
+              ]
 
 
 def export_df_from_LIMS():
