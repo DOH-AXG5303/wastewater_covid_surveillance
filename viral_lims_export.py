@@ -160,11 +160,22 @@ def drop_null_sample_ID(df_lims):
     df_lims = df_lims.copy()
     
     df_lims['SubmitterSampleNumber'] = pd.to_numeric(df_lims['SubmitterSampleNumber'], errors = "coerce")
-    to_drop = df_lims[df_lims['SubmitterSampleNumber'].isnull()].index
+    to_drop = df_lims.index[df_lims['SubmitterSampleNumber'].isnull()]
     df_lims.drop(index = to_drop, inplace = True)
     df_lims['SubmitterSampleNumber'] = df_lims['SubmitterSampleNumber'].astype(np.int64)
     
     return df_lims 
+
+
+def drop_all_but_N1_N2(df_lims):
+    """
+    Drop all rows if PCRTarget is anything excep "N1" or "N2"
+    """
+    df_lims = df_lims.copy()
+    to_drop = df_lims.index[~df_lims['PCRTarget'].isin(["N1","N2"])]
+    df_lims.drop(index = to_drop, inplace = True)
+    return df_lims
+    
     
 
 def rename_lims_columns(df_lims):
