@@ -1,5 +1,6 @@
 import pyodbc
 import pandas as pd
+import numpy as np
 import requests
 import io
 import re
@@ -69,14 +70,18 @@ text_to_numeric =  [
                     ]
 
 #LIMS columns that have drop down choice
-choice_clms = [
-                 'sars_cov2_units',
+
+yes_no_clms = [
                  'quality_flag',
                  'inhibition_adjust',
                  'ntc_amplify',
                  'pretreatment',
                  'inhibition_detect',
                  'sars_cov2_below_lod'
+               ]
+
+choice_clms = [
+                 'sars_cov2_units'
               ]
 
 
@@ -146,6 +151,21 @@ def project_dtype_summary(redcap_api_url, redcap_tokens_prod):
     
     return data_dict
 
+
+def drop_null_sample_ID(df_lims):
+    """
+    drop rows where 'SubmitterSampleNumber' is null
+    Convert 'SubmitterSampleNumber' to int64 (instead of float)
+    """
+    df_lims = df_lims.copy()
+    
+    df_lims['SubmitterSampleNumber'] = pd.to_numeric(df_lims['SubmitterSampleNumber'], errors = "coerce")
+    to_drop = df_lims[df_lims['SubmitterSampleNumber'].isnull()].index
+    df_lims.drop(index = to_drop, inplace = True)
+    df_lims['SubmitterSampleNumber'] = df_lims['SubmitterSampleNumber'].astype(np.int64)
+    
+    return df_lims 
+    
 
 def rename_lims_columns(df_lims):
     """
