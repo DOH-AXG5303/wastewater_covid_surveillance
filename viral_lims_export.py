@@ -24,11 +24,11 @@ dict_lims_column_map = {
                          'TestResultDate': 'test_result_date',
                          'FlowRate': 'flow_rate',
                          'SARSCoV2Units': 'sars_cov2_units',
-                         'SARSCoV2AvgConc': 'sars_cov2_avg_conc',
+                         #'SARSCoV2AvgConc': 'sars_cov2_avg_conc',
                          'SARSCoV2StdError': 'sars_cov2_std_error',
                          'SARSCoV2CI95lo': 'sars_cov2_cl_95_lo',
                          'SARSCoV2CI95up': 'sars_cov2_cl_95_up',
-                         'SARSCoV2BelowLOD': 'sars_cov2_below_lod',
+                         #'SARSCoV2BelowLOD': 'sars_cov2_below_lod',
                          'LODSewage': 'lod_sewage',
                          'NTCAmplify': 'ntc_amplify',
                          'RecEffSpikeConc': 'rec_eff_percent',
@@ -41,7 +41,11 @@ dict_lims_column_map = {
                          'PreExtStorageTime': 'pre_ext_storage_time',
                          'PreExtStorageTemp': 'pre_ext_storage_temp',
                          'TotConcVol': 'tot_conc_vol',
-                         'QualityFlag': 'quality_flag'}
+                         'QualityFlag': 'quality_flag',
+                         'N1_SARSCoV2AvgConc':'n1_sars_cov2_avg_conc',
+                         'N2_SARSCoV2AvgConc':'n2_sars_cov2_avg_conc',
+                         'N1_SARSCoV2BelowLOD':'n1_sars_cov2_below_lod',
+                         'N2_SARSCoV2BelowLOD':'n2_sars_cov2_below_lod'}
 
 #Columns that are numeric in LIMS, also numeric in REDCap
 numeric_clms= [
@@ -56,7 +60,7 @@ numeric_clms= [
              'sars_cov2_cl_95_lo',
              'sars_cov2_cl_95_up',
              'pre_ext_storage_temp',
-             'sars_cov2_avg_conc'
+             #'sars_cov2_avg_conc'
             ]
 
 #Columns that are text in LIMS, converted to numeric in REDCap 
@@ -177,7 +181,62 @@ def drop_all_but_N1_N2(df_lims):
     return df_lims
     
     
+def below_lod_to_yes_no(df_lims):
+    """
+    Convert the column "SARSCoV2BelowLOD" to None if it isnt already a yes or no
+    
+    """
+    #"SARSCoV2BelowLOD" must be either "Yes" or "No", Otherwise change to None 
+    to_none = df_lims.index[~df_lims["SARSCoV2BelowLOD"].isin(["Yes", "No"])]
+    df_lims.loc[to_none, "SARSCoV2BelowLOD"] = None
 
+    return df_lims
+
+def long_to_wide(df_lims):
+    """
+    Convert the long form: same sample ID for PCRTargets: N1 and N2, into wide form: each critical value: 'SARSCoV2AvgConc','SARSCoV2BelowLOD' 
+    will have a column for N1_critical_value, and N2_critical_value. This will allow unique sample ID's 
+    
+    """
+    
+    #Make sure SARSCoV2AvgConc is a numeric value before pivot transforms
+    df_lims["SARSCoV2AvgConc"] = pd.to_numeric(df_lims["SARSCoV2AvgConc"], errors = "coerce") #make sure "SARSCoV2AvgConc" is numeric 
+
+    #Separate dataframe for pivot operation 
+    df_pivot = df_lims.pivot(index = 'SubmitterSampleNumber', columns = 'PCRTarget', values = ['SARSCoV2AvgConc','SARSCoV2BelowLOD']).copy()
+
+    #Converting multi-index pivot columns into single-index unique column names. merging the names of level0 and level1 column names. 
+    new_columns = []
+    for tup in df_pivot.columns:
+
+        new_val =tup[1]+"_"+ tup[0] #strining tuples from level0 column names and level 1 column names 
+        new_tup = (tup[0], new_val)
+        new_columns.append(new_tup)
+
+    multiindex = pd.MultiIndex.from_tuples(new_columns) #convert new tuple names to multi-index 
+    df_pivot.columns = multiindex
+
+    df_pivot.columns = df_pivot.columns.droplevel(0) #drop zeroth level
+    
+    # All remaining columns, not involved in the pivot operation. N1 and N2 are are duplicate for all remaaining columns (except 'PCRTargetRef', this doesnt go to REDCap)
+    # To remove duplicates for N1 and N2 for all rows, pivot is performed on all remaining columns, N2 column is droped, and N1 renamed to the original column name
+
+    ### Create Pivot table with remaining columns to match previous pivot operation
+    not_pivot_clms = df_lims.columns[~df_lims.columns.isin(["SARSCoV2AvgConc","SARSCoV2BelowLOD"])]
+    df_not_pivot = df_lims.loc[:,not_pivot_clms].pivot(index = 'SubmitterSampleNumber', columns = 'PCRTarget').copy()
+
+    ### Drop all N2 columns
+    df_not_pivot.drop("N2", axis = 1, level = 1, inplace = True)
+    df_not_pivot.columns = df_not_pivot.columns.droplevel(1)
+
+    # Merging the result of the two pivoted dataframes
+    df_final = pd.merge(df_pivot, df_not_pivot, left_index= True, right_index= True)
+    df_final.index.name = "sample_id"
+
+    df_lims = df_final.copy()
+
+    return df_lims
+    
 def rename_lims_columns(df_lims):
     """
     Transform column names, set index, rename columns
@@ -187,8 +246,8 @@ def rename_lims_columns(df_lims):
         df_lims = datframe with new column names
     """
     df_lims = df_lims.copy()
-    df_lims.set_index("SubmitterSampleNumber", inplace = True) #set index
-    df_lims.index.name = "sample_id" #rename index
+    #df_lims.set_index("SubmitterSampleNumber", inplace = True) #set index
+    #df_lims.index.name = "sample_id" #rename index
     df_lims = df_lims[list(dict_lims_column_map.keys())].copy() #keep only columns that will go to redcap
     df_lims.rename(columns = dict_lims_column_map, inplace = True) #rename the columns on the way to redcap
     
