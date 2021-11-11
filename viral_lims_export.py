@@ -81,7 +81,9 @@ yes_no_clms = [
                  'ntc_amplify',
                  'pretreatment',
                  'inhibition_detect',
-                 'sars_cov2_below_lod'
+                 #'sars_cov2_below_lod',
+                 'n1_sars_cov2_below_lod',
+                 'n2_sars_cov2_below_lod',
                ]
 
 choice_clms = [
@@ -307,18 +309,47 @@ def freetext_transform(df_lims):
 
     return df_lims
 
+def validate_yes_no_clms(df_lims):
+    """
+    force values to either "yes", "no" or nan for the list of yes_no_clms
+    """
+    df_lims = df_lims.copy()
 
-# def convert_lims_dtypes(df_lims):
-    
-#     #Do I have to convert dtype to enter into redcap?
-    
-#     #converting columns dtypes (select columns)
-#     df_lims = df_lims.copy()
-#     df_lims[numeric_clms_easy] = df_lims[numeric_clms_easy].apply(pd.to_numeric)
-#     df_lims[numeric_clms_challenging] = df_lims[numeric_clms_challenging].apply(pd.to_numeric, errors = "ignore") #neet to change to "coerce"
-    
-#     return df_lims
+    di = {
+        "Yes": "yes",
+        "No": "no",
+        "yes":"yes",
+        "no":"no"
+        }
 
+    for clm in yes_no_clms:
+        df_lims[clm] = df_lims[clm].map(di)
+        
+    return df_lims
+
+def validate_choice_fields(df_lims):
+    """
+    map values in choice columns to equivolent REDCap values
+    """
+    df_lims = df_lims.copy()
+    
+    choice_fileds = {
+            'pretreatment':{
+                            "yes":1,
+                            "no":0
+                            },
+            'extraction_method': {}, #empty dict, will change all values to nan
+            'sars_cov2_units':{
+                              'Copies/L':1, #REDCAP:copies/L wastewater
+                              'Copies/g':3  #REDCAP:copies/g wet sludge
+                               },
+            'concentration_method':{}
+                    }
+
+    for key in choice_fileds.keys():
+        df_lims[key] = df_lims[key].map(choice_fileds[key])
+        df_lims[key] = df_lims[key].astype("Int64")
+    return df_lims
 
 def accepted_redcap_fields(df):
     """
