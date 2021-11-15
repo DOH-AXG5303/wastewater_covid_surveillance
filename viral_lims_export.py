@@ -166,8 +166,7 @@ def drop_null_sample_ID(df_lims):
     df_lims = df_lims.copy()
     
     df_lims['SubmitterSampleNumber'] = pd.to_numeric(df_lims['SubmitterSampleNumber'], errors = "coerce")
-    to_drop = df_lims.index[df_lims['SubmitterSampleNumber'].isnull()]
-    df_lims.drop(index = to_drop, inplace = True)
+    df_lims = df_lims.dropna(subset = ['SubmitterSampleNumber'])
     df_lims['SubmitterSampleNumber'] = df_lims['SubmitterSampleNumber'].astype(np.int64)
     
     return df_lims 
