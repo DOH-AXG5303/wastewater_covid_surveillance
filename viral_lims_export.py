@@ -34,6 +34,7 @@ dict_lims_column_map = {
                          'RecEffSpikeConc': 'rec_eff_percent',
                          'InhibitionDetect': 'inhibition_detect',
                          'InhibitionAdjust': 'inhibition_adjust',
+                         "InhibitionMethod": "inhibition_method",
                          'ConcentrationMethod': 'concentration_method',
                          'ExtractionMethod': 'extraction_method',
                          'PreConcStorageTime': 'pre_conc_storage_time',
@@ -177,8 +178,9 @@ def drop_all_but_N1_N2(df_lims):
     Drop all rows if PCRTarget is anything excep "N1" or "N2"
     """
     df_lims = df_lims.copy()
-    to_drop = df_lims.index[~df_lims['PCRTarget'].isin(["N1","N2"])]
-    df_lims.drop(index = to_drop, inplace = True)
+
+    df_lims = df_lims[df_lims['PCRTarget'].isin(["N1","N2"])]
+    
     return df_lims
     
     
@@ -201,8 +203,13 @@ def long_to_wide(df_lims):
     """
     
     #Make sure SARSCoV2AvgConc is a numeric value before pivot transforms
+    df_lims = df_lims.copy()
+    
     df_lims["SARSCoV2AvgConc"] = pd.to_numeric(df_lims["SARSCoV2AvgConc"], errors = "coerce") #make sure "SARSCoV2AvgConc" is numeric 
 
+    #drop duplicates from subset, needed for pivot
+    df_lims = df_lims.drop_duplicates(subset = ['SubmitterSampleNumber', 'PCRTarget'])
+    
     #Separate dataframe for pivot operation 
     df_pivot = df_lims.pivot(index = 'SubmitterSampleNumber', columns = 'PCRTarget', values = ['SARSCoV2AvgConc','SARSCoV2BelowLOD']).copy()
 
