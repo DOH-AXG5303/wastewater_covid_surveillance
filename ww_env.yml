@@ -1,0 +1,24 @@
+name: wastewater_env
+# Alexey Gilman, 12/27/2021
+# Environment for DOH data transformations
+
+
+channels:
+  - defaults
+dependencies:
+  - python=3.8*
+  - pandas=1.2*
+  - pyodbc=4.0*
+  - numpy=1.20*
+  - requests=2.25*
+  - pip
+  - pip:
+    - pycap
+
+
+
+#MANUAL INSTALL
+
+#manual install of jupyterlab
+#manual install of nb_conda   -jupyter support of conda envs
+#manual install of jedi -autocomple text tab
