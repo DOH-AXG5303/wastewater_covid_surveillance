@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 
 dcipher_clms = [           
                      'reporting_jurisdiction',
@@ -84,46 +84,45 @@ dcipher_clms = [
                      'quality_flag']
 
 county_keys = {    
-                "ada":"Adams",
-                "aso":"Asotin",
-                "ben":"Benton",
-                "che":"Chelan",
-                "clm":"Clallam",
-                "clk":"Clark",
-                "col":"Columbia",
-                "cow":"Cowlitz",
-                "dou":"Douglas",
-                "fer":"Ferry",
-                "fra":"Franklin",
-                "gar":"Garfield",
-                "grt":"Grant",
-                "ghb":"Grays Harbor",
-                "isl":"Island",
-                "jef":"Jefferson",
-                "kin":"King",
-                "ksp":"Kitsap",
-                "ktt":"Kittitas",
-                "klk":"Klickitat",
-                "lew":"Lewis",
-                "lin":"Lincoln",
-                "mas":"Mason",
-                "oka":"Okanogan",
-                "pac":"Pacific",
-                "por":"Pend Oreille",
-                "per":"Pierce",
-                "san":"San Juan",
-                "skg":"Skagit",
-                "skm":"Skamania",
-                "sno":"Snohomish",
-                "spo":"Spokane",
-                "ste":"Stevens",
-                "thu":"Thurston",
-                "wah":"Wahkiakum",
-                "wal":"Walla Walla",
-                "wha":"Whatcom",
-                "wit":"Whitman",
-                "yak":"Yakima",
-                }
+            'ada': 53001,
+            'aso': 53003,
+            'ben': 53005,
+            'che': 53007,
+            'clm': 53009,
+            'clk': 53011,
+            'col': 53013,
+            'cow': 53015,
+            'dou': 53017,
+            'fer': 53019,
+            'fra': 53021,
+            'gar': 53023,
+            'grt': 53025,
+            'ghb': 53027,
+            'isl': 53029,
+            'jef': 53031,
+            'kin': 53033,
+            'ksp': 53035,
+            'ktt': 53037,
+            'klk': 53039,
+            'lew': 53041,
+            'lin': 53043,
+            'mas': 53045,
+            'oka': 53047,
+            'pac': 53049,
+            'por': 53051,
+            'per': 53053,
+            'san': 53055,
+            'skg': 53057,
+            'skm': 53059,
+            'sno': 53061,
+            'spo': 53063,
+            'ste': 53065,
+            'thu': 53067,
+            'wah': 53069,
+            'wal': 53071,
+            'wha': 53073,
+            'wit': 53075,
+            'yak': 53077}
 
 
 def condense_county_columns(df_pid170):
@@ -157,7 +156,7 @@ def condense_county_columns(df_pid170):
     full_county_names = {}
 
     for key, value in raw_county_names.items():
-        full_county_names[key] = [county_keys[i] for i in value]
+        full_county_names[key] = str([county_keys[i] for i in value])[1:-1] #convert list to string, drop brackets
 
 
     df_pid170 = df_pid170.loc[:, ~df_pid170.columns.isin(county_columns)].copy()
@@ -294,3 +293,184 @@ def pid170_values_transform(df_pid170):
     df_pid170["sample_type"] = df_pid170["sample_type"].map(sample_type)
 
     return df_pid170
+
+def pid171_transform(df_pid171):
+    """
+    transform values in select fields from REDCap PID171
+    """
+
+    df_pid171 = df_pid171.copy()
+    
+    pretreatment = {
+            1:"yes",
+            0:"no"
+            }
+    
+    units = {
+            1: "copies/L wastewater",
+            2: "log10 copies/L wastewater",
+            3: "copies/g wet sludge",
+            4: "log10 copies/g wet sludge",
+            5: "copies/g dry sludge",
+            6: "log10 copies/g dry sludge"
+            }
+
+    hum_frac_mic_unit = {
+             1: 'copies/L wastewater',
+             2: 'log10 copies/L wastewater',
+             3: 'copies/g wet sludge',
+             4: 'log10 copies/g wet sludge',
+             5: 'copies/g dry sludge',
+             6: 'log10 copies/g dry sludge'
+            }
+
+    hum_frac_chem_unit = {
+             1: 'copies/L wastewater',
+             2: 'log10 copies/L wastewater',
+             3: 'copies/g wet sludge',
+             4: 'log10 copies/g wet sludge',
+             5: 'copies/g dry sludge',
+             6: 'log10 copies/g dry sludge',
+             7: 'micrograms/L wastewater',
+             8: 'log10 micrograms/L wastewater',
+             9: 'micrograms/g wet sludge',
+             10: 'log10 micrograms/g wet sludge',
+             11: 'micrograms/g dry sludge',
+             12: 'log10 micrograms/g dry sludge'
+            }
+
+    # Changing REDCap key:values for 'pretreatment'
+    df_pid171['pretreatment'] = df_pid171['pretreatment'].map(pretreatment)
+
+    #Changing REDCap key:values for "sars_cov2_units"
+    df_pid171["sars_cov2_units"] = df_pid171["sars_cov2_units"].map(units)
+
+    # Changing REDCap key:values for "hum_frac_mic_unit"
+    df_pid171['hum_frac_mic_unit'] = df_pid171['hum_frac_mic_unit'].map(hum_frac_mic_unit)
+
+    # Changing REDCap key:values for "other_norm_unit" #same key values as hum_frac_chem_units
+    df_pid171['other_norm_unit'] = df_pid171['other_norm_unit'].map(hum_frac_chem_unit)
+    
+    #DCIPHER TRANSFORM: change "pre_conc_store_temp" values from "0-8C" to 4 and change column to float
+    df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].map({'0-8C': 4})
+    df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].astype(np.float64)
+    
+    #Convert limit of detection to float and in units of copies per Liter
+    df_pid171["lod_sewage"] = df_pid171["lod_sewage"].map({'10,000 Copies/mL': 10000000})
+    
+    
+    return df_pid171
+
+
+def pid176_transform(df_pid176):
+    """
+    transform values in select fields from REDCap PID171
+    """
+
+    df_pid176 = df_pid176.copy()
+    
+    pretreatment = {
+            1:"yes",
+            0:"no"
+            }
+
+    rec_eff = {    
+            1: 'bcov vaccine',
+            2: 'brsv vaccine',
+            3: 'murine coronavirus',
+            4: 'oc43',
+            5: 'phi6',
+            6: 'puro',
+            7: 'ms2 coliphage',
+            8: 'hep g armored rna'
+            }
+
+    spike_matrix = {
+            1: 'raw sample',
+            2: 'raw sample post pasteurization',
+            3: 'clarified sample',
+            4: 'sample concentrate',
+            5: 'lysis buffer'
+            }
+
+    pcr_type = {
+            1: 'qpcr',
+            2: 'ddpcr',
+            3: 'qiagen dpcr',
+            4: 'fluidigm dpcr',
+            5: 'life technologies dpcr',
+            6: 'raindance dpcr'
+            }
+
+    hum_frac_target_mic = {
+            1: 'pepper mild mottle virus',
+            2: 'crassphage',
+            3: 'hf183'
+            }
+
+    other_norm_name = {
+            1: 'pepper mild mottle virus',
+            2: 'crassphage',
+            3: 'hf183',
+            4: 'caffeine',
+            5: 'creatinine',
+            6: 'sucralose',
+            7: 'ibuprofen'
+            }
+
+    num_no_target_control = {
+             0: "0",   
+             1: '1',
+             2: '2',
+             3: '3',
+             4: 'more than 3',
+            }
+
+    hum_frac_chem_unit = {
+             1: 'copies/L wastewater',
+             2: 'log10 copies/L wastewater',
+             3: 'copies/g wet sludge',
+             4: 'log10 copies/g wet sludge',
+             5: 'copies/g dry sludge',
+             6: 'log10 copies/g dry sludge',
+             7: 'micrograms/L wastewater',
+             8: 'log10 micrograms/L wastewater',
+             9: 'micrograms/g wet sludge',
+             10: 'log10 micrograms/g wet sludge',
+             11: 'micrograms/g dry sludge',
+             12: 'log10 micrograms/g dry sludge'
+            }
+
+    # Changing REDCap key:values for 'pasteurized'
+    df_pid176['pasteurized'] = df_pid176['pasteurized'].map(pretreatment)
+
+    # Changing REDCap key:values for "rec_eff_target_name"
+    df_pid176["rec_eff_target_name"] = df_pid176["rec_eff_target_name"].map(rec_eff)
+
+    # Changing REDCap key:values for "rec_eff_spike_matrix"
+    df_pid176['rec_eff_spike_matrix'] = df_pid176['rec_eff_spike_matrix'].map(spike_matrix)
+
+    # Changing REDCap key:values for "pcr_type"
+    df_pid176['pcr_type'] = df_pid176['pcr_type'].map(pcr_type)
+
+    # Changing REDCap key:values for "hum_frac_target_mic"
+    df_pid176['hum_frac_target_mic'] = df_pid176['hum_frac_target_mic'].map(hum_frac_target_mic)
+
+    # Changing REDCap key:values for "other_norm_name"
+    df_pid176['other_norm_name'] = df_pid176['other_norm_name'].map(other_norm_name)
+
+    # Changing REDCap key:values for "num_no_target_control"
+    df_pid176['num_no_target_control'] = df_pid176['num_no_target_control'].map(num_no_target_control)
+
+    # Changing REDCap key:values for "hum_frac_chem_unit"
+    df_pid176['hum_frac_chem_unit'] = df_pid176['hum_frac_chem_unit'].map(hum_frac_chem_unit)
+    
+    
+    #Converting from int to float
+    # first convert to numeric and coerce errors, downcast to float32, then change to float64 for consistency
+
+    df_pid176["rec_eff_spike_conc"] = pd.to_numeric(df_pid176["rec_eff_spike_conc"], downcast = "float", errors = "coerce")
+    df_pid176["rec_eff_spike_conc"] = df_pid176["rec_eff_spike_conc"].astype(np.float64) 
+    
+    return df_pid176
+
