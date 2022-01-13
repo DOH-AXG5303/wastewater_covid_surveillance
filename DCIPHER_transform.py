@@ -338,6 +338,28 @@ def pid171_transform(df_pid171):
              11: 'micrograms/g dry sludge',
              12: 'log10 micrograms/g dry sludge'
             }
+    
+    conc_method = {
+             'mf-mgcl2': 'membrane filtration with addition of mgcl2',
+             'mf-acid': 'membrane filtration with sample acidification',
+             'mf-acid-mgcl2': 'membrane filtration with acidification and mgcl2',
+             'mf': 'membrane filtration with no amendment',
+             'mf-mgcl2-addsolids': 'membrane filtration with addition of mgcl2, membrane recombined with separated solids',
+             'mf-acid-addsolids': 'membrane filtration with sample acidification, membrane recombined with separated solids',
+             'mf-acid-mgcl2-addsolids': 'membrane filtration with acidification and mgcl2, membrane recombined with separated solids',
+             'mf-addsolids': 'membrane filtration with no amendment, membrane recombined with separated solids',
+             'peg': 'peg precipitation',
+             'ultracentrifugation': 'ultracentrifugation',
+             'skimmilk': 'skimmed milk flocculation',
+             'beefextract': 'beef extract flocculation',
+             'promega-tna': 'promega wastewater large volume tna capture kit',
+             'uf-centricon': 'centricon ultrafiltration',
+             'uf-amicon': 'amicon ultrafiltration',
+             'uf-hf-deadend': 'hollow fiber dead end ultrafiltration',
+             'uf-innovaprep': 'innovaprep ultrafiltration',
+             'noconc-addsolids': 'no liquid concentration, liquid recombined with separated solids',
+             '13': 'none'}
+    
 
     # Changing REDCap key:values for 'pretreatment'
     df_pid171['pretreatment'] = df_pid171['pretreatment'].map(pretreatment)
@@ -351,13 +373,15 @@ def pid171_transform(df_pid171):
     # Changing REDCap key:values for "other_norm_unit" #same key values as hum_frac_chem_units
     df_pid171['other_norm_unit'] = df_pid171['other_norm_unit'].map(hum_frac_chem_unit)
     
+    # Changing REDCap key:value for "concentration_method"
+    df_pid171["concentration_method"] = df_pid171["concentration_method"].map(conc_method)
+    
     #DCIPHER TRANSFORM: change "pre_conc_store_temp" values from "0-8C" to 4 and change column to float
     df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].map({'0-8C': 4})
     df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].astype(np.float64)
     
     #Convert limit of detection to float and in units of copies per Liter
     df_pid171["lod_sewage"] = df_pid171["lod_sewage"].map({'10,000 Copies/mL': 10000000})
-    
     
     return df_pid171
 

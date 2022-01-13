@@ -344,17 +344,20 @@ def validate_choice_fields(df_lims):
                             "yes":1,
                             "no":0
                             },
-            'extraction_method': {}, #empty dict, will change all values to nan
+            'extraction_method': {'MagMAX Viral/Pathogen Nucleic Acid Isolation Kit':"magmax"}, #empty dict, will change all values to nan
             'sars_cov2_units':{
                               'Copies/L':1, #REDCAP:copies/L wastewater
                               'Copies/g':3  #REDCAP:copies/g wet sludge
                                },
-            'concentration_method':{}
+            'concentration_method':{"Skim Milk Flocculation":"skimmilk"}
                     }
-
     for key in choice_fileds.keys():
         df_lims[key] = df_lims[key].map(choice_fileds[key])
+
+    for key in ['sars_cov2_units','pretreatment']:
+        df_lims[key] = df_lims[key].map(choice_fileds[key])
         df_lims[key] = df_lims[key].astype("Int64")
+        
     return df_lims
 
 def accepted_redcap_fields(df):
