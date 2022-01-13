@@ -360,6 +360,27 @@ def pid171_transform(df_pid171):
              'noconc-addsolids': 'no liquid concentration, liquid recombined with separated solids',
              '13': 'none'}
     
+    extract_meth = {
+            'qiagen-viral': 'qiagen allprep powerviral dna/rna kit',
+            'qiagen-fecal': 'qiagen allprep powerfecal dna/rna kit',
+            'qiagen': 'qiagen allprep dna/rna kit',
+            'qiagen-rneasy-power': 'qiagen rneasy powermicrobiome kit',
+            'qiagen-powerwater': 'qiagen powerwater kit',
+            'qiagen-rneasy': 'qiagen rneasy kit',
+            'qiagen-qiaamp-epoch': 'qiagen qiaamp buffers with epoch columns',
+            'promega-ht-tna': 'promega ht tna kit',
+            'promega-ht-auto': 'promega automated tna kit',
+            'promega-manual-tna': 'promega manual tna kit',
+            'promega-ww-largevol-tna': 'promega wastewater large volume tna capture kit',
+            'nuclisens-auto-magbead': 'nuclisens automated magnetic bead extraction kit',
+            'phenol': 'phenol chloroform',
+            'chemagic300': 'chemagic viral dna/rna 300 kit',
+            'trizol-zymomagbeads-zymo': 'trizol, zymo mag beads w/ zymo clean and concentrator',
+            '4smethod': '4s method',
+            'zymoquick-r2014': 'zymo quick-rna fungal/bacterial miniprep #r2014',
+            'magmax': 'thermo magmax microbiome ultra nucleic acid isolation kit',
+            'none': 'none'}
+    
 
     # Changing REDCap key:values for 'pretreatment'
     df_pid171['pretreatment'] = df_pid171['pretreatment'].map(pretreatment)
@@ -375,6 +396,10 @@ def pid171_transform(df_pid171):
     
     # Changing REDCap key:value for "concentration_method"
     df_pid171["concentration_method"] = df_pid171["concentration_method"].map(conc_method)
+    
+    # Changing REDCap key:value for extraction_method
+    df_pid171["extraction_method"] = df_pid171["extraction_method"].map(extract_meth)
+    
     
     #DCIPHER TRANSFORM: change "pre_conc_store_temp" values from "0-8C" to 4 and change column to float
     df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].map({'0-8C': 4})
