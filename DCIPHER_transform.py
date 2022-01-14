@@ -523,3 +523,37 @@ def pid176_transform(df_pid176):
     
     return df_pid176
 
+def DCIPHER_v3_modifications(complete):
+    """
+    DCIPHER has made major changes in update 3.0, modifications to adjust to changes. 
+    
+    -rename columns,
+    -add "pcr_gene_target' field to contain values from "pcr_target" field
+    -change all values in "pcr_target" to "sars-cov-2"
+    
+    """
+    
+    complete = complete.copy()
+    
+    
+    # 5 additional fields that DCIPHER expects (prior update)
+    complete[['analysis_ignore', 'dashboard_ignore', 'major_lab_method', 'major_lab_method_desc', 'qc_ignore']] = np.nan
+    
+    #renaming fields
+    names_dict = {
+    'sars_cov2_units':'pcr_target_units',
+    'sars_cov2_avg_conc':'pcr_target_avg_conc',
+    'sars_cov2_std_error':'pcr_target_std_error',
+    'sars_cov2_cl_95_lo':'pcr_target_cl_95_lo',
+    'sars_cov2_cl_95_up':'pcr_target_cl_95_up',
+    'sars_cov2_below_lod':'pcr_target_below_lod'}
+
+    complete = complete.rename(columns = names_dict)
+    
+    #adding 'pcr_gene_target'
+    complete['pcr_gene_target'] = complete["pcr_target"]
+    
+    #setting all pcr_target values to "sars-cov-2"
+    complete["pcr_target"] = "sars-cov-2"
+    
+    return complete
