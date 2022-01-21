@@ -31,7 +31,7 @@ dict_lims_column_map = {
                          #'SARSCoV2BelowLOD': 'sars_cov2_below_lod',
                          'LODSewage': 'lod_sewage',
                          'NTCAmplify': 'ntc_amplify',
-                         'RecEffSpikeConc': 'rec_eff_percent',
+                         '% Recovery Eff.': 'rec_eff_percent',
                          'InhibitionDetect': 'inhibition_detect',
                          'InhibitionAdjust': 'inhibition_adjust',
                          "InhibitionMethod": "inhibition_method",
