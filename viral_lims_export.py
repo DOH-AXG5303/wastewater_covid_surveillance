@@ -4,9 +4,14 @@ import numpy as np
 import requests
 import io
 import re
+import redcap
 from lims_login import credentials
 from lims_login import redcap_tokens_prod
 from lims_login import redcap_api_url
+
+import logging
+logging.basicConfig(filename= "lims_export.log", level = logging.DEBUG,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 # {"LIMS Value": "REDCap Value"}
 dict_lims_column_map = {
@@ -417,3 +422,35 @@ def date_time_redcap_fields(df):
     df_date_time = df_text_type[date_mask | time_mask].copy()
 
     return df_date_time
+
+
+if __name__ == "__main__":
+    ####Export all lims data####
+    df_lims = export_df_from_LIMS()
+    logging.debug("LIMS export complete, raw data shape: {}".format(df_lims.shape))
+
+    ### Critical convert long to wide ####
+    df_lims = (
+        drop_null_sample_ID(df_lims)# #remove artifiact data from LIMS (missing sample ID's) 
+        .pipe(drop_all_but_N1_N2)#Remove full rows where PCR Target is enything except N1 or N2
+        .pipe(below_lod_to_yes_no)
+        .pipe(long_to_wide) #meat and potatos! everything not under PCRTarget N1 or N2 will not be imported
+        )
+    logging.debug("long-to-wide transform complete, data shape: {}".format(df_lims.shape))
+
+    ####Transform lims dataframe#### 
+    df_lims = (
+        rename_lims_columns(df_lims) 
+        .pipe(verify_time_field) #change time values to None if dont fit format HH:MM
+        .pipe(convert_numeric) #convert numeric columns to floats, coerce errors
+        .pipe(freetext_transform)
+        .pipe(validate_yes_no_clms)
+        .pipe(validate_choice_fields))
+    
+    logging.debug("validation transform complete, data shape: {}".format(df_lims.shape))
+
+    
+    #Import to REDCap
+    project = redcap.Project(redcap_api_url, redcap_tokens_prod["PID171"])
+    response = project.import_records(df_lims, force_auto_number=False, overwrite="overwrite")
+    logging.debug("Import to REDCap complete: {}".format(response))
