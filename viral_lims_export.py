@@ -452,5 +452,5 @@ if __name__ == "__main__":
     
     #Import to REDCap
     project = redcap.Project(redcap_api_url, redcap_tokens_prod["PID171"])
-    response = project.import_records(df_lims, force_auto_number=False, overwrite="overwrite")
+    response = project.import_records(df_lims, force_auto_number=False)
     logging.debug("Import to REDCap complete: {}".format(response))
