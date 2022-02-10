@@ -547,7 +547,8 @@ def DCIPHER_v3_modifications(complete):
     'sars_cov2_std_error':'pcr_target_std_error',
     'sars_cov2_cl_95_lo':'pcr_target_cl_95_lo',
     'sars_cov2_cl_95_up':'pcr_target_cl_95_up',
-    'sars_cov2_below_lod':'pcr_target_below_lod'}
+    'sars_cov2_below_lod':'pcr_target_below_lod', 
+    'pcr_target_ref':'pcr_gene_target_ref'}
 
     complete = complete.rename(columns = names_dict)
     
