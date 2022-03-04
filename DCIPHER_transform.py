@@ -211,6 +211,7 @@ def clean_merge(df_pid170, df_pid171, df_pid176):
     
     #select only final DCIPHER columns and minor modifications
     complete = complete.rename(columns = {"micro_lab_id":"lab_id"})
+    complete = complete[complete['dcipher_upload'] == 1] #selecting only sites that will be reported to DCIPHER
     complete = complete.loc[:,dcipher_clms]
     complete = complete.sort_values(by = ["sample_id"], ignore_index=True)
     
