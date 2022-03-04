@@ -10,8 +10,6 @@ from lims_login import redcap_tokens_prod
 from lims_login import redcap_api_url
 
 import logging
-logging.basicConfig(filename= "lims_export.log", level = logging.DEBUG,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 # {"LIMS Value": "REDCap Value"}
 dict_lims_column_map = {
@@ -429,6 +427,11 @@ def date_time_redcap_fields(df):
 
 
 if __name__ == "__main__":
+    
+    ### Generate Log file ####
+    logging.basicConfig(filename= "lims_export.log", level = logging.DEBUG,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+    
     ####Export all lims data####
     df_lims = export_df_from_LIMS()
     logging.debug("LIMS export complete, raw data shape: {}".format(df_lims.shape))
