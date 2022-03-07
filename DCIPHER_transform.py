@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+import json
+
+
+y_upload_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files"
+missing_values_name = r"\report_critical_missing_values.json"
 
 dcipher_clms = [           
                      'reporting_jurisdiction',
@@ -123,6 +128,49 @@ county_keys = {
             'wha': 53073,
             'wit': 53075,
             'yak': 53077}
+
+
+#critical fields to generate missing values report
+required_field = [    
+     'reporting_jurisdiction',
+     'county_names',
+     'zipcode',
+     'population_served',
+     'sample_location',
+     'institution_type',
+     'wwtp_name',
+     'wwtp_jurisdiction',
+     'capacity_mgd',
+     'sample_type',
+     'sample_matrix',
+     'concentration_method',
+     'extraction_method',
+     'rec_eff_target_name',
+     'rec_eff_spike_matrix',
+     'rec_eff_spike_conc',
+     'pcr_target',
+     'pcr_gene_target',
+     'pcr_gene_target_ref',
+     'pcr_type',
+     'lod_ref',
+     'quant_stan_type',
+     'stan_ref',
+     'inhibition_method',
+     'num_no_target_control',
+     'sample_collect_date',
+     'sample_collect_time',
+     'flow_rate',
+     'sample_id',
+     'lab_id',
+     'test_result_date',
+     'pcr_target_units',
+     'pcr_target_avg_conc',
+     'lod_sewage',
+     'ntc_amplify',
+     'rec_eff_percent',
+     'inhibition_detect',
+     'inhibition_adjust'
+    ]
 
 
 def condense_county_columns(df_pid170):
@@ -560,3 +608,37 @@ def DCIPHER_v3_modifications(complete):
     complete["pcr_target"] = "sars-cov-2"
     
     return complete
+
+
+def critical_null_report(complete):
+    """
+    generate report for critical fields with missing values
+    
+    args:
+        dataframe (complete dataframe that will be uploaded to DCIPHER as CSV)
+    return:
+        dictionary (key = sample ID, values = list of columns containing critical NA values)
+    
+    """
+
+    required = complete.loc[:,required_field].copy()
+    required = required.set_index("sample_id")
+
+    ### Loop over all ccolumns in every row, identify null values ###
+    report = {}
+
+    for index, row in required.iterrows():
+        #per row, which values are null? boolean series
+        null_values = row.isnull()
+
+        #per sample ID, a list of columns where value is null 
+        if null_values.any():
+            report[index] = [i for i, k  in zip(null_values.index, null_values) if k]
+        else:
+            pass
+
+    ### Save report as a pretty json file 
+    with open((y_upload_path + missing_values_name), 'w') as fp:
+        json.dump(report, fp, sort_keys=True, indent=4)
+        
+    return report
