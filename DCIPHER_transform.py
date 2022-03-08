@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import json
+from lims_login import credentials
+
 
 
 y_upload_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files"
@@ -572,6 +574,35 @@ def pid176_transform(df_pid176):
     df_pid176["rec_eff_spike_conc"] = df_pid176["rec_eff_spike_conc"].astype(np.float64) 
     
     return df_pid176
+
+
+def filter_not_tested_sample_ids(complete):
+    """
+    filter only sample IDs that have already been lab tested.
+        - REDCap has new sample ID's but no lab results for samples that are in the queue between creation, collection, shipping
+        - These samples are removed from DCIPHER upload file by comparison with LIMS sample IDs
+        - Therefore, only sample ID's that are present in LIMS database will move to DCIPHER
+    
+    return: Dataframe
+    
+    """
+    complete = complete.copy()
+    
+    
+    # import sample ID row from LIMS
+    cnxn = pyodbc.connect(credentials) # credentials = 'DSN=LIMS_DATA;UID=xxxxxxx;PWD=xxxxxxx'
+    sample_number = pd.read_sql_query('SELECT SubmitterSampleNumber FROM [vz_Epi_ELS_SARS-CoV-2 ddPCR]',cnxn)
+    
+    #minor transform LIMS data: to numberic, remove NaN
+    numeric_sample_number = pd.to_numeric(sample_number["SubmitterSampleNumber"], errors = "coerce")
+    numeric_sample_number = numeric_sample_number[numeric_sample_number.notnull()]
+    
+    #filter based on limes sample ID's, keep only sample id's present in LIMS database
+    new_to_keep = complete["sample_id"].isin(numeric_sample_number)
+    complete = complete.loc[new_to_keep,:]
+    
+    return complete
+
 
 def DCIPHER_v3_modifications(complete):
     """
