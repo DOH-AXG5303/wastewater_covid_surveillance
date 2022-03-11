@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
 import json
+import pyodbc
 from lims_login import credentials
+from lims_login import redcap_tokens_prod
+from lims_login import redcap_api_url
+from viral_lims_export import project_dtype_summary
 from datetime import datetime
 
 y_upload_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files"
@@ -694,4 +698,37 @@ def save_csv_for_upload(complete):
     complete.to_csv(historic_path +"\DCIPHER_" + date + ".csv", index = False)
     
     return complete
+
+
+
+
+if __name__ == "__main__":
+    
+    #### import redcap projects ####
+    ww_redcap = project_dtype_summary(redcap_api_url, redcap_tokens_prod)
+
+    #### transform pid170 ####
+    df_pid170 = (
+        condense_county_columns(ww_redcap["PID170"])
+        .pipe(pid170_values_transform)
+        )
+
+    #### transform pid171 ####
+    df_pid171 = (
+        wide_to_long(ww_redcap["PID171"])
+        .pipe(pid171_transform)
+        )
+
+    #### transform pid176 ####
+    df_pid176 = pid176_transform(ww_redcap["PID176"])
+
+    #### merge proijects, final clean, save csv file ####
+    complete = (
+        clean_merge(df_pid170, df_pid171, df_pid176) #merge
+        .pipe(filter_not_tested_sample_ids) #remove data for sample that are created but not tested
+        .pipe(DCIPHER_v3_modifications) #patch 3.0 modifications
+        .pipe(critical_null_report) # enerate a report .txt file for missing critical fields
+        .pipe(save_csv_for_upload)
+        )
+
     
