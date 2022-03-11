@@ -456,6 +456,9 @@ def pid171_transform(df_pid171):
     df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].map({'0-8C': 4})
     df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].astype(np.float64)
     
+    #rec_eff_percent must be float greater than zero, if NA, it must be "-1". changing NA to -1
+    df_pid171 = df_pid171.fillna(value = {"rec_eff_percent":-1})
+    
     #Convert limit of detection to float and in units of copies per Liter
     df_pid171["lod_sewage"] = df_pid171["lod_sewage"].map({'10,000 Copies/mL': 10000000,
                                                           '3400 Copies/mL': 3400000})
