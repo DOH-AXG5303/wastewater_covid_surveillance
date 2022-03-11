@@ -2,11 +2,13 @@ import pandas as pd
 import numpy as np
 import json
 from lims_login import credentials
-
-
+from datetime import datetime
 
 y_upload_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files"
+historic_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files\historic_uploads"
+
 missing_values_name = r"\report_critical_missing_values.json"
+upload_name = "\DCIPHER_upload.csv"
 
 dcipher_clms = [           
                      'reporting_jurisdiction',
@@ -677,3 +679,19 @@ def critical_null_report(complete):
         
     return complete
 
+
+def save_csv_for_upload(complete):
+    """
+    save final merged and clean dataframe to y drive (2 locations), to be uploaded to DCIPHER (manual step)
+    
+    """
+    #save latest file to upload
+    complete.to_csv(y_upload_path + upload_name, index = False) #save most current DCIPHER file to Y-drive 
+
+    #datestamp file for historic archive of current version
+    date = str(datetime.now())[0:10]
+    date = date.replace("-","_")
+    complete.to_csv(historic_path +"\DCIPHER_" + date + ".csv", index = False)
+    
+    return complete
+    
