@@ -675,4 +675,5 @@ def critical_null_report(complete):
     with open((y_upload_path + missing_values_name), 'w') as fp:
         json.dump(report, fp, sort_keys=True, indent=4)
         
-    return report
+    return complete
+
