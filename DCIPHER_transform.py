@@ -8,13 +8,16 @@ from lims_login import redcap_api_url
 from viral_lims_export import project_dtype_summary
 from datetime import datetime
 
-y_upload_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files"
-historic_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files\historic_uploads"
+y_upload_path = r"\\dohfltum13\data\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files"
+historic_path = r"\\dohfltum13\data\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files\historic_uploads"
+
+#y_upload_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files"
+#historic_path = r"Y:\Confidential\DCHS\PHOCIS\Surveillance\COVID-19 Wastewater Surveillance\DCIPHER_upload\ww_files\historic_uploads"
 
 missing_values_name = r"\report_critical_missing_values.json"
 upload_name = "\DCIPHER_upload.csv"
 
-dcipher_clms = [           
+dcipher_clms = [
                      'reporting_jurisdiction',
                      'county_names',
                      'other_jurisdiction',
@@ -96,7 +99,7 @@ dcipher_clms = [
                      'other_norm_unit',
                      'quality_flag']
 
-county_keys = {    
+county_keys = {
             'ada': 53001,
             'aso': 53003,
             'ben': 53005,
@@ -139,7 +142,7 @@ county_keys = {
 
 
 #critical fields to generate missing values report
-required_field = [    
+required_field = [
      'reporting_jurisdiction',
      'county_names',
      'zipcode',
@@ -184,10 +187,10 @@ required_field = [
 def condense_county_columns(df_pid170):
     """
     REDCap PID170 contains a unique column for every possible county (values 0 or 1) yes or no interprotation of said county
-    
+
     Convert all the county columns into a single column containing a list of full county name values
     """
-    
+
     df_pid170 = df_pid170.copy()
 
     county_columns = df_pid170.filter(regex="county_names").columns.copy()#identify county name columns
@@ -205,10 +208,10 @@ def condense_county_columns(df_pid170):
         a = list(row_series[row_series == 1].index)
         a = [i[-3:] for i in a]
 
-        raw_county_names[row_index] = a 
+        raw_county_names[row_index] = a
 
 
-    #Convert dictionary of raw county names into full names based on county key:value pairs. 
+    #Convert dictionary of raw county names into full names based on county key:value pairs.
     full_county_names = {}
 
     for key, value in raw_county_names.items():
@@ -217,60 +220,60 @@ def condense_county_columns(df_pid170):
 
     df_pid170 = df_pid170.loc[:, ~df_pid170.columns.isin(county_columns)].copy()
     df_pid170.loc[:,["county_names"]] = pd.Series(full_county_names)
-    
+
     return df_pid170
 
 
 def wide_to_long(df_pid171):
     """
-    REDCap PID171 is in wide format with unique sample ID's and PCR_target of n1 and n2 containing fields sars_cov2_below_lod (n1 and n2) and sars_cov2_avg_conc (n1 and n2). 
-    
-    Transform long format: repeat sample ID's for n1 target and n2 target (PCR_target field). Single column of sars_cov2_below_lod and sars_cov2_avg_conc. 
-    
+    REDCap PID171 is in wide format with unique sample ID's and PCR_target of n1 and n2 containing fields sars_cov2_below_lod (n1 and n2) and sars_cov2_avg_conc (n1 and n2).
+
+    Transform long format: repeat sample ID's for n1 target and n2 target (PCR_target field). Single column of sars_cov2_below_lod and sars_cov2_avg_conc.
+
     """
     df_pid171 = df_pid171.reset_index().copy()
-    
+
     #identify columns to melt, and all the rest
     melt_clms = ['n1_sars_cov2_avg_conc', 'n2_sars_cov2_avg_conc', 'n1_sars_cov2_below_lod', 'n2_sars_cov2_below_lod']
     not_melt_clms = df_pid171.columns[~df_pid171.columns.isin(melt_clms)]
-    
+
     #perform melt for avg_conc and keep all other columns
     df_melt_conc = pd.melt(df_pid171, value_vars = ['n1_sars_cov2_avg_conc', 'n2_sars_cov2_avg_conc'], var_name = "pcr_target", value_name = 'sars_cov2_avg_conc', id_vars = not_melt_clms )
     #perform melt for below_lod and only keep the value column (below_lod)
     df_melt_lod = pd.melt(df_pid171, value_vars = ['n1_sars_cov2_below_lod', 'n2_sars_cov2_below_lod'], var_name = "pcr_target", value_name = 'sars_cov2_below_lod', id_vars = ["sample_id"] )
-    
+
     #change the PCR_target column to only first 2 letters (n1 or n2)
     df_melt_lod["pcr_target"] = df_melt_lod["pcr_target"].str[0:2]
     df_melt_conc["pcr_target"] = df_melt_lod["pcr_target"].str[0:2]
-    
+
     #merge the dataframes together
     df_pid171 = pd.merge(df_melt_conc, df_melt_lod, how = "inner", left_on = ["sample_id", "pcr_target"], right_on = ["sample_id", "pcr_target"])
-    
+
     return df_pid171
 
 
 def clean_merge(df_pid170, df_pid171, df_pid176):
     """
-    merge REDCap dataframes into a final dataframe for DCIPHER. 
-    
+    merge REDCap dataframes into a final dataframe for DCIPHER.
+
     """
     df_pid170 = df_pid170.copy()
-    df_pid171 = df_pid171.copy()    
+    df_pid171 = df_pid171.copy()
     df_pid176 = df_pid176.copy()
-    
+
     #merge PID170 unto pid171 on sample_site_id
     merge_1 = df_pid171.merge(df_pid170, left_on = "sample_site_id", right_index = True)
-    
+
     #final merge: PID176 unto the first merge
     not_needed = df_pid176.columns[~df_pid176.columns.isin(["zipcode", "pcr_target"])] #list of not needed columns (would be duplicates after next merge) in pid176
     complete = merge_1.merge(df_pid176.loc[:,not_needed], left_on="micro_lab_id", right_index=True) #final merge (excluding not needed columns)
-    
+
     #select only final DCIPHER columns and minor modifications
     complete = complete.rename(columns = {"micro_lab_id":"lab_id"})
     complete = complete[complete['dcipher_upload'] == 1] #selecting only sites that will be reported to DCIPHER
     complete = complete.loc[:,dcipher_clms]
     complete = complete.sort_values(by = ["sample_id"], ignore_index=True)
-    
+
     return complete
 
 def pid170_values_transform(df_pid170):
@@ -279,7 +282,7 @@ def pid170_values_transform(df_pid170):
     """
 
     df_pid170 = df_pid170.copy()
-    
+
     inst_keys = {
              1: 'not institution specific',
              2: 'correctional',
@@ -298,12 +301,12 @@ def pid170_values_transform(df_pid170):
              15: 'airplane',
              99: 'other, please specify'
                 }
-    
+
     storm_input = {
             1:"yes",
             0:"no"
                 }
-    
+
     sample_matrix = {
             1: 'raw wastewater',
             2: 'post grit removal',
@@ -314,7 +317,7 @@ def pid170_values_transform(df_pid170):
             7: 'septage',
             8: 'holding tank'
                 }
-    
+
     sample_type = {
             '24F': '24-hr flow-weighted composite',
             '12F': '12-hr flow-weighted composite',
@@ -333,19 +336,19 @@ def pid170_values_transform(df_pid170):
             '3M': '3-hr manual composite',
             'G': 'grab'
                 }
-    
+
     # Changing REDCap key:values for institution_type
     df_pid170['institution_type'] = df_pid170['institution_type'].map(inst_keys)
-    
+
     # Changing REDCap key:values for stormwater_input
     df_pid170['stormwater_input'] = df_pid170['stormwater_input'].map(storm_input)
-    
+
     # Changing REDCap key:values for 'influent_equilibrated'
     df_pid170['influent_equilibrated'] = df_pid170['influent_equilibrated'].map(storm_input)
-    
+
     # Changing REDCap key:values for 'sample_matrix'
     df_pid170["sample_matrix"] = df_pid170["sample_matrix"].map(sample_matrix)
-    
+
     # Changing REDCap key:values for 'sample_type'
     df_pid170["sample_type"] = df_pid170["sample_type"].map(sample_type)
 
@@ -357,12 +360,12 @@ def pid171_transform(df_pid171):
     """
 
     df_pid171 = df_pid171.copy()
-    
+
     pretreatment = {
             1:"yes",
             0:"no"
             }
-    
+
     units = {
             1: "copies/L wastewater",
             2: "log10 copies/L wastewater",
@@ -395,7 +398,7 @@ def pid171_transform(df_pid171):
              11: 'micrograms/g dry sludge',
              12: 'log10 micrograms/g dry sludge'
             }
-    
+
     conc_method = {
              'mf-mgcl2': 'membrane filtration with addition of mgcl2',
              'mf-acid': 'membrane filtration with sample acidification',
@@ -416,7 +419,7 @@ def pid171_transform(df_pid171):
              'uf-innovaprep': 'innovaprep ultrafiltration',
              'noconc-addsolids': 'no liquid concentration, liquid recombined with separated solids',
              '13': 'none'}
-    
+
     extract_meth = {
             'qiagen-viral': 'qiagen allprep powerviral dna/rna kit',
             'qiagen-fecal': 'qiagen allprep powerfecal dna/rna kit',
@@ -437,7 +440,7 @@ def pid171_transform(df_pid171):
             'zymoquick-r2014': 'zymo quick-rna fungal/bacterial miniprep #r2014',
             'magmax': 'thermo magmax microbiome ultra nucleic acid isolation kit',
             'none': 'none'}
-    
+
 
     # Changing REDCap key:values for 'pretreatment'
     df_pid171['pretreatment'] = df_pid171['pretreatment'].map(pretreatment)
@@ -450,25 +453,25 @@ def pid171_transform(df_pid171):
 
     # Changing REDCap key:values for "other_norm_unit" #same key values as hum_frac_chem_units
     df_pid171['other_norm_unit'] = df_pid171['other_norm_unit'].map(hum_frac_chem_unit)
-    
+
     # Changing REDCap key:value for "concentration_method"
     df_pid171["concentration_method"] = df_pid171["concentration_method"].map(conc_method)
-    
+
     # Changing REDCap key:value for extraction_method
     df_pid171["extraction_method"] = df_pid171["extraction_method"].map(extract_meth)
-    
-    
+
+
     #DCIPHER TRANSFORM: change "pre_conc_store_temp" values from "0-8C" to 4 and change column to float
     df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].map({'0-8C': 4})
     df_pid171["pre_conc_storage_temp"] = df_pid171["pre_conc_storage_temp"].astype(np.float64)
-    
+
     #rec_eff_percent must be float greater than zero, if NA, it must be "-1". changing NA to -1
     df_pid171 = df_pid171.fillna(value = {"rec_eff_percent":-1})
-    
+
     #Convert limit of detection to float and in units of copies per Liter
     df_pid171["lod_sewage"] = df_pid171["lod_sewage"].map({'10,000 Copies/mL': 10000000,
                                                           '3400 Copies/mL': 3400000})
-    
+
     return df_pid171
 
 
@@ -478,13 +481,13 @@ def pid176_transform(df_pid176):
     """
 
     df_pid176 = df_pid176.copy()
-    
+
     pretreatment = {
             1:"yes",
             0:"no"
             }
 
-    rec_eff = {    
+    rec_eff = {
             1: 'bcov vaccine',
             2: 'brsv vaccine',
             3: 'murine coronavirus',
@@ -529,7 +532,7 @@ def pid176_transform(df_pid176):
             }
 
     num_no_target_control = {
-             0: "0",   
+             0: "0",
              1: '1',
              2: '2',
              3: '3',
@@ -574,14 +577,14 @@ def pid176_transform(df_pid176):
 
     # Changing REDCap key:values for "hum_frac_chem_unit"
     df_pid176['hum_frac_chem_unit'] = df_pid176['hum_frac_chem_unit'].map(hum_frac_chem_unit)
-    
-    
+
+
     #Converting from int to float
     # first convert to numeric and coerce errors, downcast to float32, then change to float64 for consistency
 
     df_pid176["rec_eff_spike_conc"] = pd.to_numeric(df_pid176["rec_eff_spike_conc"], downcast = "float", errors = "coerce")
-    df_pid176["rec_eff_spike_conc"] = df_pid176["rec_eff_spike_conc"].astype(np.float64) 
-    
+    df_pid176["rec_eff_spike_conc"] = df_pid176["rec_eff_spike_conc"].astype(np.float64)
+
     return df_pid176
 
 
@@ -591,44 +594,44 @@ def filter_not_tested_sample_ids(complete):
         - REDCap has new sample ID's but no lab results for samples that are in the queue between creation, collection, shipping
         - These samples are removed from DCIPHER upload file by comparison with LIMS sample IDs
         - Therefore, only sample ID's that are present in LIMS database will move to DCIPHER
-    
+
     return: Dataframe
-    
+
     """
     complete = complete.copy()
-    
-    
+
+
     # import sample ID row from LIMS
     cnxn = pyodbc.connect(credentials) # credentials = 'DSN=LIMS_DATA;UID=xxxxxxx;PWD=xxxxxxx'
     sample_number = pd.read_sql_query('SELECT SubmitterSampleNumber FROM [vz_Epi_ELS_SARS-CoV-2 ddPCR]',cnxn)
-    
+
     #minor transform LIMS data: to numberic, remove NaN
     numeric_sample_number = pd.to_numeric(sample_number["SubmitterSampleNumber"], errors = "coerce")
     numeric_sample_number = numeric_sample_number[numeric_sample_number.notnull()]
-    
+
     #filter based on limes sample ID's, keep only sample id's present in LIMS database
     new_to_keep = complete["sample_id"].isin(numeric_sample_number)
     complete = complete.loc[new_to_keep,:]
-    
+
     return complete
 
 
 def DCIPHER_v3_modifications(complete):
     """
-    DCIPHER has made major changes in update 3.0, modifications to adjust to changes. 
-    
+    DCIPHER has made major changes in update 3.0, modifications to adjust to changes.
+
     -rename columns,
     -add "pcr_gene_target' field to contain values from "pcr_target" field
     -change all values in "pcr_target" to "sars-cov-2"
-    
+
     """
-    
+
     complete = complete.copy()
-    
-    
+
+
     # 5 additional fields that DCIPHER expects (prior update)
     complete[['analysis_ignore', 'dashboard_ignore', 'major_lab_method', 'major_lab_method_desc', 'qc_ignore']] = np.nan
-    
+
     #renaming fields
     names_dict = {
     'sars_cov2_units':'pcr_target_units',
@@ -636,29 +639,29 @@ def DCIPHER_v3_modifications(complete):
     'sars_cov2_std_error':'pcr_target_std_error',
     'sars_cov2_cl_95_lo':'pcr_target_cl_95_lo',
     'sars_cov2_cl_95_up':'pcr_target_cl_95_up',
-    'sars_cov2_below_lod':'pcr_target_below_lod', 
+    'sars_cov2_below_lod':'pcr_target_below_lod',
     'pcr_target_ref':'pcr_gene_target_ref'}
 
     complete = complete.rename(columns = names_dict)
-    
+
     #adding 'pcr_gene_target'
     complete['pcr_gene_target'] = complete["pcr_target"]
-    
+
     #setting all pcr_target values to "sars-cov-2"
     complete["pcr_target"] = "sars-cov-2"
-    
+
     return complete
 
 
 def critical_null_report(complete):
     """
     generate report for critical fields with missing values
-    
+
     args:
         dataframe (complete dataframe that will be uploaded to DCIPHER as CSV)
     return:
         dictionary (key = sample ID, values = list of columns containing critical NA values)
-    
+
     """
 
     required = complete.loc[:,required_field].copy()
@@ -671,39 +674,39 @@ def critical_null_report(complete):
         #per row, which values are null? boolean series
         null_values = row.isnull()
 
-        #per sample ID, a list of columns where value is null 
+        #per sample ID, a list of columns where value is null
         if null_values.any():
             report[index] = [i for i, k  in zip(null_values.index, null_values) if k]
         else:
             pass
 
-    ### Save report as a pretty json file 
+    ### Save report as a pretty json file
     with open((y_upload_path + missing_values_name), 'w') as fp:
         json.dump(report, fp, sort_keys=True, indent=4)
-        
+
     return complete
 
 
 def save_csv_for_upload(complete):
     """
     save final merged and clean dataframe to y drive (2 locations), to be uploaded to DCIPHER (manual step)
-    
+
     """
     #save latest file to upload
-    complete.to_csv(y_upload_path + upload_name, index = False) #save most current DCIPHER file to Y-drive 
+    complete.to_csv(y_upload_path + upload_name, index = False) #save most current DCIPHER file to Y-drive
 
     #datestamp file for historic archive of current version
     date = str(datetime.now())[0:10]
     date = date.replace("-","_")
     complete.to_csv(historic_path +"\DCIPHER_" + date + ".csv", index = False)
-    
+
     return complete
 
 
 
 
 if __name__ == "__main__":
-    
+
     #### import redcap projects ####
     ww_redcap = project_dtype_summary(redcap_api_url, redcap_tokens_prod)
 
@@ -730,5 +733,3 @@ if __name__ == "__main__":
         .pipe(critical_null_report) # enerate a report .txt file for missing critical fields
         .pipe(save_csv_for_upload)
         )
-
-    
