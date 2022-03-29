@@ -352,7 +352,8 @@ def validate_choice_fields(df_lims):
                               'Copies/L':1, #REDCAP:copies/L wastewater
                               'Copies/g':3  #REDCAP:copies/g wet sludge
                                },
-            'concentration_method':{"Skim Milk Flocculation":"skimmilk"}
+            'concentration_method':{"Skim Milk Flocculation":"skimmilk",
+                                   "Ceres Nanotrap":"ceresnano"}
                     }
     for key in choice_fileds.keys():
         df_lims[key] = df_lims[key].map(choice_fileds[key])

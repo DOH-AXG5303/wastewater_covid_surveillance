@@ -418,6 +418,7 @@ def pid171_transform(df_pid171):
              'uf-hf-deadend': 'hollow fiber dead end ultrafiltration',
              'uf-innovaprep': 'innovaprep ultrafiltration',
              'noconc-addsolids': 'no liquid concentration, liquid recombined with separated solids',
+             'ceresnano': 'ceres nanotrap',
              '13': 'none'}
 
     extract_meth = {
