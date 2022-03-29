@@ -471,7 +471,8 @@ def pid171_transform(df_pid171):
 
     #Convert limit of detection to float and in units of copies per Liter
     df_pid171["lod_sewage"] = df_pid171["lod_sewage"].map({'10,000 Copies/mL': 10000000,
-                                                          '3400 Copies/mL': 3400000})
+                                                          '3400 Copies/mL': 3400000,
+                                                          '820 Copies/ml': 820000})
 
     return df_pid171
 
