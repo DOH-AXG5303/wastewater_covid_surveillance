@@ -193,8 +193,8 @@ def below_lod_to_yes_no(df_lims):
     
     """
     df_lims = df_lims.copy()
-    #"SARSCoV2BelowLOD" must be either "Yes" or "No", Otherwise change to None 
-    to_none = df_lims.index[~df_lims["SARSCoV2BelowLOD"].isin(["Yes", "No"])]
+    #"SARSCoV2BelowLOD" must be either "yes" or "no", Otherwise change to None 
+    to_none = df_lims.index[~df_lims["SARSCoV2BelowLOD"].str.lower().isin(["yes", "no"])]
     df_lims.loc[to_none, "SARSCoV2BelowLOD"] = None
 
     return df_lims
