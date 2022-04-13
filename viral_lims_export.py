@@ -13,12 +13,12 @@ import logging
 
 # {"LIMS Value": "REDCap Value"}
 dict_lims_column_map = {
-                         'SampleCollectDate': 'sample_collect_date',
-                         'SampleCollectTime': 'sample_collect_time',
-                         'pH': 'ph',
-                         'Conductivity': 'conductivity',
+                         #'SampleCollectDate': 'sample_collect_date',  #removed from import 04/12/2022
+                         #'SampleCollectTime': 'sample_collect_time',  #removed from import 04/12/2022
+                         #'pH': 'ph',  #removed from import 04/12/2022
+                         #'Conductivity': 'conductivity',  #removed from import 04/12/2022
                          'CollectionWaterTemp': 'collection_water_temp',
-                         'TSS': 'tss',
+                         #'TSS': 'tss',
                          'CollectionStorageTime': 'collection_storage_time',
                          'CollectionStorageTemp': 'collection_storage_temp',
                          'Pretreatment': 'pretreatment',
@@ -53,10 +53,10 @@ dict_lims_column_map = {
 
 #Columns that are numeric in LIMS, also numeric in REDCap
 numeric_clms= [
-             'ph',
-             'conductivity',
+             #'ph',
+             #'conductivity',
              'collection_water_temp',
-             'tss',
+             #'tss',
              'collection_storage_temp',
              'equiv_sewage_amt',
              'flow_rate',
@@ -268,6 +268,7 @@ def rename_lims_columns(df_lims):
 def verify_time_field(df_lims):
     """
     Change time field "sample_collect_time" in prep for import to REDCap
+    change time values to None if dont fit format HH:MM
     
     args:
         Dataframe, must contain "sample_collect_time" as field
@@ -450,7 +451,7 @@ if __name__ == "__main__":
     ####Transform lims dataframe#### 
     df_lims = (
         rename_lims_columns(df_lims) 
-        .pipe(verify_time_field) #change time values to None if dont fit format HH:MM
+        #.pipe(verify_time_field) #remove from pipeline 04/12/2022
         .pipe(convert_numeric) #convert numeric columns to floats, coerce errors
         .pipe(freetext_transform)
         .pipe(validate_yes_no_clms)
