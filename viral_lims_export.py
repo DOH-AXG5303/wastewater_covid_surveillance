@@ -14,7 +14,7 @@ import logging
 # {"LIMS Value": "REDCap Value"}
 dict_lims_column_map = {
                          'SampleCollectDate': 'sample_collect_date',  #removed from import 04/12/2022 - 04/18/2022
-                         #'SampleCollectTime': 'sample_collect_time',  #removed from import 04/12/2022 - 04/18/2022
+                         'SampleCollectTime': 'sample_collect_time',  #removed from import 04/12/2022 - 04/18/2022
                          #'pH': 'ph',  #removed from import 04/12/2022
                          #'Conductivity': 'conductivity',  #removed from import 04/12/2022
                          'CollectionWaterTemp': 'collection_water_temp',
@@ -451,7 +451,7 @@ if __name__ == "__main__":
     ####Transform lims dataframe#### 
     df_lims = (
         rename_lims_columns(df_lims) 
-        #.pipe(verify_time_field) #remove from pipeline 04/12/2022
+        .pipe(verify_time_field) #remove from pipeline 04/12/2022
         .pipe(convert_numeric) #convert numeric columns to floats, coerce errors
         .pipe(freetext_transform)
         .pipe(validate_yes_no_clms)
