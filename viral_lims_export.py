@@ -13,8 +13,8 @@ import logging
 
 # {"LIMS Value": "REDCap Value"}
 dict_lims_column_map = {
-                         #'SampleCollectDate': 'sample_collect_date',  #removed from import 04/12/2022
-                         #'SampleCollectTime': 'sample_collect_time',  #removed from import 04/12/2022
+                         'SampleCollectDate': 'sample_collect_date',  #removed from import 04/12/2022 - 04/18/2022
+                         'SampleCollectTime': 'sample_collect_time',  #removed from import 04/12/2022 - 04/18/2022
                          #'pH': 'ph',  #removed from import 04/12/2022
                          #'Conductivity': 'conductivity',  #removed from import 04/12/2022
                          'CollectionWaterTemp': 'collection_water_temp',
