@@ -14,11 +14,13 @@ import logging
 
 # {"LIMS Value": "REDCap Value"}
 dict_lims_column_map = {
+                         'SampleCollectDate': 'sample_collect_date',
+                         'SampleCollectTime': 'sample_collect_time',
                          'CollectionWaterTemp': 'collection_water_temp',
                          'CollectionStorageTime': 'collection_storage_time',
                          'CollectionStorageTemp': 'collection_storage_temp',
                          'Pretreatment': 'pretreatment',
-                         'PretreatmentSpecify': 'pretreatment_specify',
+                         'PretreatmentSpecify': 'pretreatment_specify', #all null values in LIMS (05/11/2022)
                          'EquivSewageAmt': 'equiv_sewage_amt',
                          'TestResultDate': 'test_result_date',
                          'FlowRate': 'flow_rate',
@@ -54,12 +56,17 @@ numeric_clms= [
              'sars_cov2_cl_95_lo',
              'sars_cov2_cl_95_up',
              'pre_ext_storage_temp',
-             'sars_cov2_avg_conc',
              'collection_storage_time',
              'pre_ext_storage_time',
              'pre_conc_storage_time',
              'rec_eff_percent',
+             'sars_cov2_avg_conc', #added to numeric
             ]
+
+# special field that include both numeric and text - extract only numeric part
+text_to_numeric =  [
+                     'tot_conc_vol' #unique situation
+                    ]
 
 
 def export_df_from_LIMS():
@@ -104,3 +111,20 @@ def convert_numeric(df):
     df[numeric_clms] = df[numeric_clms].apply(pd.to_numeric, errors = "coerce")
     
     return df
+
+def freetext_transform(df_lims):
+    """
+    Some columns are commonly filled with digits followed by numbers (e.g.,500ml) 
+    Regex split values to numeric and text, replace value to the numeric portion. 
+    Convert entire column to numeric, coerce errors. 
+    """
+    
+    df_lims = df_lims.copy()
+
+    for i in text_to_numeric:
+        series = df_lims[i].str.extract(r"([0-9\.]+)([A-Za-z ]+)?")[0]
+        df_lims[i] = series
+
+    df_lims[text_to_numeric] = df_lims[text_to_numeric].apply(pd.to_numeric, errors = "coerce")
+
+    return df_lims
