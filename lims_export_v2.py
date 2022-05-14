@@ -68,6 +68,47 @@ text_to_numeric =  [
                      'tot_conc_vol' #unique situation
                     ]
 
+#the followeing fields must be in all lowercase for consistent import to Redcap.
+#Mostly yes/no values. Lims sometimes has entires such as YES/Yes/yes, or NO/No/no 
+lowercase_fields = [
+                 'quality_flag',
+                 'inhibition_adjust',
+                 'ntc_amplify',
+                 'pretreatment',
+                 'inhibition_detect',
+                 'sars_cov2_below_lod',
+                    ]
+
+#standard yes/no conversion from LIMS to REDCap format
+yes_no_map = {'yes': 'Yes',
+              'no': 'No',
+              'not_tested': 'Not Tested'}
+
+#Converting choice fields from LIMS format to REDCap format
+choice_fields = {
+                 'quality_flag': yes_no_map,
+                 'inhibition_adjust': yes_no_map,
+                 'ntc_amplify': yes_no_map,
+                 'inhibition_detect': yes_no_map,
+                 'sars_cov2_below_lod': yes_no_map,
+                 'pretreatment': {"yes":1,
+                                  "no":0},
+                 'sars_cov2_units':{'Copies/L':1, #REDCAP:copies/L wastewater
+                                    'Copies/g':3},  #REDCAP:copies/g wet sludge
+                 'extraction_method': {'MagMAX Viral/Pathogen Nucleic Acid Isolation Kit':"magmax"}, 
+                 'concentration_method': {"Skim Milk Flocculation":"skimmilk",
+                                          "Ceres Nanotrap":"ceresnano"},
+                }
+
+#force the following fields to specified value in REDCap (regardless of LIMS value). 
+set_field_values = {'sars_cov2_units':1}
+
+#Force the following dtypes for select fields
+fields_dtypes = {'pretreatment': "Int64",
+              'sars_cov2_units': "Int64",}
+
+
+
 
 def export_df_from_LIMS():
     """
@@ -127,4 +168,46 @@ def freetext_transform(df_lims):
 
     df_lims[text_to_numeric] = df_lims[text_to_numeric].apply(pd.to_numeric, errors = "coerce")
 
+    return df_lims
+
+
+def convert_choice_fields(df_lims):
+    """
+    Convert select fields to lowercase (yes/no) values
+    Convert choice fields to matching mapped values in REDCap
+    """
+    
+    df_lims = df_lims.copy()
+    
+    #setting specified fields to lowercase
+    df_lims[lowercase_fields] = df_lims[lowercase_fields].apply(lambda x: x.str.lower())
+    
+    #convert choice_fields to mapped value
+    df_lims[list(choice_fields.keys())] = df_lims[choice_fields.keys()].apply(lambda x: x.map(choice_fields[x.name]) )
+    
+    return df_lims
+
+
+def force_values(df_lims):
+    """
+    """
+    
+    df_lims = df_lims.copy()
+    
+    for clm in set_field_values.keys():
+        
+        df_lims[clm] = set_field_values[clm]
+        
+    return df_lims
+
+
+def set_dtypes(df_lims):
+    """
+    """
+    
+    df_lims = df_lims.copy()
+    
+    for clm in fields_dtypes.keys():
+        df_lims[clm] = df_lims[clm].astype(fields_dtypes[clm])
+        
     return df_lims
