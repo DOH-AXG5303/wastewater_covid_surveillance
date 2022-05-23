@@ -44,7 +44,8 @@ dict_lims_column_map = {
                          'PreExtStorageTemp': 'pre_ext_storage_temp',
                          'TotConcVol': 'tot_conc_vol',
                          'QualityFlag': 'quality_flag',
-                         'SubmitterSampleNumber': 'sample_id'}
+                         'PCRTarget':'pcr_target',
+                         'SubmitterSampleNumber': 'sample_id',}
 
 #Columns that are numeric in LIMS, also numeric in REDCap
 numeric_clms= [
@@ -80,9 +81,9 @@ lowercase_fields = [
                     ]
 
 #standard yes/no conversion from LIMS to REDCap format
-yes_no_map = {'yes': 'Yes',
-              'no': 'No',
-              'not_tested': 'Not Tested'}
+yes_no_map = {'yes': 'yes',
+              'no': 'no',
+              'not_tested': 'not_tested'}
 
 #Converting choice fields from LIMS format to REDCap format
 choice_fields = {
@@ -93,8 +94,6 @@ choice_fields = {
                  'sars_cov2_below_lod': yes_no_map,
                  'pretreatment': {"yes":1,
                                   "no":0},
-                 'sars_cov2_units':{'Copies/L':1, #REDCAP:copies/L wastewater
-                                    'Copies/g':3},  #REDCAP:copies/g wet sludge
                  'extraction_method': {'MagMAX Viral/Pathogen Nucleic Acid Isolation Kit':"magmax"}, 
                  'concentration_method': {"Skim Milk Flocculation":"skimmilk",
                                           "Ceres Nanotrap":"ceresnano"},
@@ -170,6 +169,36 @@ def freetext_transform(df_lims):
 
     return df_lims
 
+def long_to_wide(df_lims):
+    """
+    Convert the long form: same sample ID for PCRTargets: N1 and N2, into wide form: each critical value: 'SARSCoV2AvgConc','SARSCoV2BelowLOD' 
+    will have a column for N1_critical_value, and N2_critical_value. This will allow unique sample ID's in REDCap
+    """
+    
+    df_lims = df_lims.copy()
+
+    df_lims = df_lims.drop_duplicates(subset = ["sample_id", "pcr_target"], keep = "last") #drop duplicates if both the same PCR target was tested more than once per sample iD, keep last
+    df_lims = df_lims[df_lims['pcr_target'].isin(["N1","N2"])] #select only N1 and N2
+
+    df_pivot = df_lims.pivot(index = "sample_id", columns = "pcr_target") #values = ['sars_cov2_below_lod', 'sars_cov2_avg_conc']
+
+    #separate wide transformed dataframe intwo two parts - critical values that are dependant on PCR_target, and everything else
+    df_pivot_critical = df_pivot[['sars_cov2_below_lod', 'sars_cov2_avg_conc']].copy()
+    df_pivot_remaining = df_pivot[df_pivot.columns.get_level_values(0).difference(['sars_cov2_below_lod', 'sars_cov2_avg_conc'])].copy()
+
+    #merge multi-index columns for critical fields
+    new_cols = ['{1}_{0}'.format(*tup) for tup in df_pivot_critical.columns]
+    df_pivot_critical.columns = [x.lower() for x in 
+                                 new_cols]
+
+    ### Drop all N2 columns
+    df_pivot_remaining = df_pivot_remaining.drop("N2", axis = 1, level = 1)
+    df_pivot_remaining.columns = df_pivot_remaining.columns.droplevel(1)
+    
+    #merge previously separated dataframes
+    df_wide = df_pivot_critical.join(df_pivot_remaining)
+    
+    return df_wide
 
 def convert_choice_fields(df_lims):
     """
