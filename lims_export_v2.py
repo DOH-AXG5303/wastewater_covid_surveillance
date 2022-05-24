@@ -62,6 +62,7 @@ numeric_clms= [
              'pre_conc_storage_time',
              'rec_eff_percent',
              'sars_cov2_avg_conc', #added to numeric
+             'pretreatment_specify', # #all null values in LIMS (05/11/2022)
             ]
 
 # special field that include both numeric and text - extract only numeric part
