@@ -40,7 +40,7 @@ dict_lims_column_map = {
                          'ExtractionMethod': 'extraction_method',
                          'PreConcStorageTime': 'pre_conc_storage_time',
                          'PreConcStorageTemp': 'pre_conc_storage_temp',
-                         'PreExtStorageTime': 'pre_ext_storage_time',
+                         'PreExtStorageTime': 'pre_ext_storage_time', # #all null values in LIMS (05/11/2022)
                          'PreExtStorageTemp': 'pre_ext_storage_temp',
                          'TotConcVol': 'tot_conc_vol',
                          'QualityFlag': 'quality_flag',
@@ -56,19 +56,22 @@ numeric_clms= [
              'sars_cov2_std_error',
              'sars_cov2_cl_95_lo',
              'sars_cov2_cl_95_up',
-             'pre_ext_storage_temp',
-             'collection_storage_time',
-             'pre_ext_storage_time',
+             'pre_ext_storage_temp', # #all null values in LIMS (05/11/2022)
+             'pre_ext_storage_time', # #all null values in LIMS (05/11/2022)
              'pre_conc_storage_time',
              'rec_eff_percent',
              'sars_cov2_avg_conc', #added to numeric
              'pretreatment_specify', # #all null values in LIMS (05/11/2022)
             ]
 
-# special field that include both numeric and text - extract only numeric part
+# special field that include both numeric and text - extract only numeric part, ex: "500ml", "7 hours"
 text_to_numeric =  [
-                     'tot_conc_vol' #unique situation
+                     'tot_conc_vol',
+                     'collection_storage_time',
                     ]
+
+#fields that must be in time format: "HH:MM"
+time_format = ["sample_collect_time"]
 
 #the followeing fields must be in all lowercase for consistent import to Redcap.
 #Mostly yes/no values. Lims sometimes has entires such as YES/Yes/yes, or NO/No/no 
@@ -81,7 +84,7 @@ lowercase_fields = [
                  'sars_cov2_below_lod',
                     ]
 
-#standard yes/no conversion from LIMS to REDCap format
+#standard yes/no conversion from LIMS to REDCap format, only the following values will remain
 yes_no_map = {'yes': 'yes',
               'no': 'no',
               'not_tested': 'not_tested'}
@@ -106,9 +109,6 @@ set_field_values = {'sars_cov2_units':1}
 #Force the following dtypes for select fields
 fields_dtypes = {'pretreatment': "Int64",
               'sars_cov2_units': "Int64",}
-
-
-
 
 def export_df_from_LIMS():
     """
@@ -217,6 +217,20 @@ def convert_choice_fields(df_lims):
     
     return df_lims
 
+def standardize_time_fields(df_lims):
+    """
+    time fields must be in format HH:MM. If value do not match standard format, change to None
+    """
+    
+    df_lims = df_lims.copy()
+    
+    for i in time_format:
+        #mask where format does NOT match the HH:MM standard
+        false_format = ~df_lims[i].str.match(r"^[0-9][0-9]\:[0-9][0-9]$", na=False)
+        #set to None if format does not match
+        df_lims.loc[false_format, i] = None
+    
+    return df_lims
 
 def force_values(df_lims):
     """
