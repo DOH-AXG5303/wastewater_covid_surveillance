@@ -74,7 +74,7 @@ text_to_numeric =  [
 time_format = ["sample_collect_time"]
 
 #the followeing fields must be in all lowercase for consistent import to Redcap.
-#Mostly yes/no values. Lims sometimes has entires such as YES/Yes/yes, or NO/No/no 
+#Mostly yes/no values. Lims sometimes has entries such as YES/Yes/yes, or NO/No/no 
 lowercase_fields = [
                  'quality_flag',
                  'inhibition_adjust',
@@ -178,7 +178,7 @@ def long_to_wide(df_lims):
     
     df_lims = df_lims.copy()
 
-    df_lims = df_lims.drop_duplicates(subset = ["sample_id", "pcr_target"], keep = "last") #drop duplicates if both the same PCR target was tested more than once per sample iD, keep last
+    df_lims = df_lims.sort_values('test_result_date').drop_duplicates(subset = ["sample_id", "pcr_target"], keep = "last") #drop duplicates if both the same PCR target was tested more than once per sample iD, keep last
     df_lims = df_lims[df_lims['pcr_target'].isin(["N1","N2"])] #select only N1 and N2
 
     df_pivot = df_lims.pivot(index = "sample_id", columns = "pcr_target") #values = ['sars_cov2_below_lod', 'sars_cov2_avg_conc']
