@@ -255,3 +255,35 @@ def set_dtypes(df_lims):
         df_lims[clm] = df_lims[clm].astype(fields_dtypes[clm])
         
     return df_lims
+
+
+if __name__ == "__main__":
+    
+    ### Generate Log file ####
+    logging.basicConfig(filename= "lims_export.log", level = logging.DEBUG,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+    
+    ### Export LIMS and isolate relevant data ###
+    df_lims = (
+        export_df_from_LIMS()
+        .pipe(isolate_relavent_data)
+        )
+    logging.debug("LIMS export complete, raw data shape: {}".format(df_lims.shape))
+    
+    ### Oreder independant transformations ###
+    df_lims = (
+        convert_numeric(df_lims)
+        .pipe(freetext_transform)
+        .pipe(convert_choice_fields)
+        .pipe(standardize_time_fields)
+        )
+    logging.debug("validation transform complete, data shape: {}".format(df_lims.shape))
+    
+    ### Critical convert long to wide ####
+    df_lims = (
+        long_to_wide(df_lims)
+        .pipe(force_values)
+        .pipe(set_dtypes)
+        )
+    logging.debug("long-to-wide transform complete, data shape: {}".format(df_lims.shape))
+    
