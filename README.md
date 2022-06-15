@@ -11,6 +11,9 @@ Data migration process for wastewater surveillance.
 ## Installing
 No installation required except prerequisite python libraries. 
 
+## Version
+06/15/2022 - version 2 of LIMS -> Redcap script is live (lims_export_v2.py)
+
 ## Using Script
 
 
