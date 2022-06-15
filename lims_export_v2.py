@@ -125,7 +125,7 @@ def export_df_from_LIMS():
 
     return sql_query
 
-def isolate_relavent_data(df_lims):
+def isolate_relevant_data(df_lims):
     """
     identify columns relavent to redcap import, rename to redcap convention 
     convert sample_id to numeric (and drop all non numeric rows)
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     ### Export LIMS and isolate relevant data ###
     df_lims = (
         export_df_from_LIMS()
-        .pipe(isolate_relavent_data)
+        .pipe(isolate_relevant_data)
         )
     logging.debug("LIMS export complete, raw data shape: {}".format(df_lims.shape))
     
@@ -286,4 +286,9 @@ if __name__ == "__main__":
         .pipe(set_dtypes)
         )
     logging.debug("long-to-wide transform complete, data shape: {}".format(df_lims.shape))
+    
+    #Import to REDCap
+    project = redcap.Project(redcap_api_url, redcap_tokens_prod["PID171"])
+    response = project.import_records(df_lims, import_format = "df", force_auto_number=False)
+    logging.debug("Import to REDCap complete: {}".format(response))
     
